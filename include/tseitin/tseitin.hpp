@@ -25,8 +25,8 @@ class literal : public i_formula {
     bool negated;
 public:
     literal(size_t id, bool negated = false) 
-    : negated(negated),
-      i_formula(id) {}
+    : i_formula(id),
+      negated(negated) {}
 
     void get_equisat(std::vector<clause_t>& clauses) const override {
         return;
@@ -37,7 +37,7 @@ public:
     }
 
     literal operator~() const {
-        return literal(!negated, id);
+        return literal(id, !negated);
     }
 
     bool get_negation() const { return negated; }
@@ -48,9 +48,9 @@ class or_formula : public i_formula {
     std::unique_ptr<i_formula> r;
 public:
     or_formula(formula_ptr left, formula_ptr right, size_t id) 
-        : l(std::move(left)),
-          r(std::move(right)),
-          i_formula(id) {};
+        : i_formula(id),
+          l(std::move(left)),
+          r(std::move(right)) {}
 
     void get_equisat(std::vector<clause_t>& clauses) const override {
         l->get_equisat(clauses);
@@ -70,9 +70,9 @@ class and_formula : public i_formula {
     std::unique_ptr<i_formula> r;
 public:
     and_formula(formula_ptr left, formula_ptr right, size_t id) 
-        : l(std::move(left)),
-          r(std::move(right)),
-          i_formula(id) {};
+        : i_formula(id),
+          l(std::move(left)),
+          r(std::move(right)) {}
 
     void get_equisat(std::vector<clause_t>& clauses) const override {
         l->get_equisat(clauses);

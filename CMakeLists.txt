@@ -6,6 +6,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS "-g")
 
+add_compile_options(
+    -Wall
+    -Wextra
+    -Wpedantic
+    -Wconversion
+    -Wsign-conversion
+    -Wshadow
+    -Wdouble-promotion
+    -Wformat=2
+    -Wnull-dereference
+)
+
 set(SRC_FILES 
     "src/main.cpp"
 )

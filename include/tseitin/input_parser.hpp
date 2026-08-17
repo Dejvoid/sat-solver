@@ -1,7 +1,7 @@
 #ifndef INPUT_PARSER_HPP_
 #define INPUT_PARSER_HPP_
 
-#include "tseitin.hpp"
+#include "tseitin/tseitin.hpp"
 #include <cctype>
 #include <iostream>
 #include <string_view>
