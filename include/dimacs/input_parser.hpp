@@ -1,0 +1,4 @@
+#ifndef DIMACS_INPUT_PARSER_HPP_
+#define DIMACS_INPUT_PARSER_HPP_
+
+#endif
