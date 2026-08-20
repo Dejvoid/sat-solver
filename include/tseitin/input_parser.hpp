@@ -93,7 +93,7 @@ class parser {
 
             auto parse_not = [&]() {
                 std::string_view var_name = consume_word();
-                match(')');
+                match(R_PAR);
                 auto id = get_or_create_var(var_name);
                 return std::make_unique<literal>(id, true);
             };

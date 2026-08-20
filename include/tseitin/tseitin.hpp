@@ -15,7 +15,8 @@ public:
     virtual ~i_formula() = default;
 
     size_t get_id() const { return id;}
-    virtual void get_equisat(std::vector<clause_t>& clauses) const = 0;
+    void get_equisat(std::vector<clause_t>& clauses) const;
+    virtual void get_equisat_impl(std::vector<clause_t>& clauses) const = 0;
     virtual literal to_literal() const = 0;
 };
 
@@ -28,9 +29,7 @@ public:
     : i_formula(id),
       negated(negated) {}
 
-    void get_equisat(std::vector<clause_t>& clauses) const override {
-        return;
-    }
+    void get_equisat_impl(std::vector<clause_t>&) const override {}
 
     literal to_literal() const override {
         return *this;
@@ -52,9 +51,9 @@ public:
           l(std::move(left)),
           r(std::move(right)) {}
 
-    void get_equisat(std::vector<clause_t>& clauses) const override {
-        l->get_equisat(clauses);
-        r->get_equisat(clauses);
+    void get_equisat_impl(std::vector<clause_t>& clauses) const override {
+        l->get_equisat_impl(clauses);
+        r->get_equisat_impl(clauses);
         clauses.push_back({~to_literal(), l->to_literal(), r->to_literal()});
         clauses.push_back({~l->to_literal(), to_literal()});
         clauses.push_back({~r->to_literal(), to_literal()});
@@ -69,14 +68,14 @@ class and_formula : public i_formula {
     std::unique_ptr<i_formula> l;
     std::unique_ptr<i_formula> r;
 public:
-    and_formula(formula_ptr left, formula_ptr right, size_t id) 
-        : i_formula(id),
+    and_formula(formula_ptr left, formula_ptr right, size_t node_id) 
+        : i_formula(node_id),
           l(std::move(left)),
           r(std::move(right)) {}
 
-    void get_equisat(std::vector<clause_t>& clauses) const override {
-        l->get_equisat(clauses);
-        r->get_equisat(clauses);
+    void get_equisat_impl(std::vector<clause_t>& clauses) const override {
+        l->get_equisat_impl(clauses);
+        r->get_equisat_impl(clauses);
         clauses.push_back({~to_literal(), r->to_literal()});
         clauses.push_back({~to_literal(), l->to_literal()});
         clauses.push_back({~r->to_literal(), ~l->to_literal(), to_literal()});
@@ -87,5 +86,9 @@ public:
     }
 };
 
+inline void i_formula::get_equisat(std::vector<clause_t>& clauses) const {
+    get_equisat_impl(clauses);
+    clauses.push_back({to_literal()});
+}
 
 #endif
