@@ -3,7 +3,9 @@
 
 #include "tseitin/tseitin.hpp"
 #include <cctype>
+#include <format>
 #include <iostream>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 
@@ -21,13 +23,21 @@ constexpr std::string_view AND = "and";
 constexpr std::string_view OR = "or";
 constexpr std::string_view NOT = "not";
 
+
+/**
+ * Actually is a simplified SMT-Lib Parser for NNF
+*/
 class parser {
     std::string_view src;
     size_t cursor = 0;
-    size_t id_counter = 0;
     std::unordered_map<std::string_view, size_t> var_ids;
+    std::vector<std::string> id_name{1};
 
-    size_t next_id() { return id_counter++; }
+    size_t register_name(std::string_view name) {
+        size_t id = id_name.size();
+        id_name.emplace_back(name);
+        return id;
+    }
 
     void skip_whitespace() {
         while(cursor < src.length() && std::isspace(src[cursor])) {
@@ -73,7 +83,7 @@ class parser {
             return var_ids.at(name);
         }
 
-        auto id = next_id();
+        auto id = register_name(name);
         var_ids.emplace(name, id);
         return id;
     }
@@ -84,11 +94,12 @@ class parser {
         if (peek() == L_PAR) {
             match(L_PAR);
 
-            auto parse_binary = [&]<typename T>() {
+            auto parse_binary = [&]<binary_formula T>() {
                 auto left = parse_formula();
                 auto right = parse_formula();
                 match(R_PAR);
-                return std::make_unique<T>(std::move(left), std::move(right), next_id());
+                auto next_id = register_name(std::format("gate: ({} {} {})", T::op_name, left->get_id(), right->get_id()));
+                return std::make_unique<T>(std::move(left), std::move(right), next_id);
             };
 
             auto parse_not = [&]() {
@@ -132,7 +143,12 @@ public:
     }
 
     const std::unordered_map<std::string_view, size_t>& get_var_ids() const { return var_ids; };
-    size_t get_highest_id() const { return id_counter; }
+    size_t get_highest_id() const { return id_name.size() - 1; }
+    std::string_view get_var_name(size_t id) const {
+        if (id < id_name.size())
+            return id_name[id];
+        return {};
+    }
 };
 
 #endif
