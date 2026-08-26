@@ -1,10 +1,15 @@
 #ifndef DPLL_HPP_
 #define DPLL_HPP_
 
-#include "tseitin/tseitin.hpp" // TODO: Move these into shared header
+#include "dpll/solver.hpp"
+#include "tseitin/tseitin.hpp"
 #include <vector>
 
-class dpll {
+class dpll : public i_solver {
+size_t decisions = 0;
+size_t propagations = 0;
+size_t clause_checks = 0;
+
 bool unit_propagation(std::vector<clause_t>& formula, std::vector<bool>& model) {
     // TODO: Check if it would be worth it sorting the formula by clause size first
     if (has_empty_clause(formula)) return false; // not satisfiable
@@ -14,6 +19,7 @@ bool unit_propagation(std::vector<clause_t>& formula, std::vector<bool>& model) 
         // add to model
         auto literal = formula[unit_index][0];
         update_model(model, literal);
+        ++propagations;
 
         // assign in formula
         formula = apply_assignment(formula, literal);
@@ -27,6 +33,7 @@ bool unit_propagation(std::vector<clause_t>& formula, std::vector<bool>& model) 
 
 bool has_empty_clause(const std::vector<clause_t>& formula) {
     for(auto&& c : formula) {
+        ++clause_checks;
         if (c.empty()) return true;
     }
     return false;
@@ -34,6 +41,7 @@ bool has_empty_clause(const std::vector<clause_t>& formula) {
 
 bool get_unit_clause(std::vector<clause_t>& formula, size_t& index) {
     for (size_t i = 0; i < formula.size(); ++i) {
+        ++clause_checks;
         if (formula[i].size() == 1) {
             index = i;
             return true;
@@ -49,6 +57,7 @@ std::vector<clause_t> apply_assignment(const std::vector<clause_t>& formula, con
     new_formula.reserve(formula.size() - 1);
 
     for (auto c : formula) {
+        ++clause_checks;
         bool keep_clause = true;
         for (auto it = c.begin(); it != c.end(); ++it) {
             const auto& l = *it;
@@ -86,13 +95,10 @@ struct state {
     bool backtracked;
 };
 
-public:
-bool get_sat(std::vector<clause_t> formula, std::vector<bool>& model) {
+bool solve(std::vector<clause_t> formula, std::vector<bool>& model) {
     bool sat = unit_propagation(formula, model);
     if (!sat) return false;
-    if (formula.empty()) {
-        return true;
-    }
+    if (formula.empty()) return true;
 
     std::vector<state> stack;
     
@@ -101,6 +107,7 @@ bool get_sat(std::vector<clause_t> formula, std::vector<bool>& model) {
 
     while (true) {
         auto lit = pick_literal(tmp_formula);
+        ++decisions;
 
         stack.push_back({
             .formula = tmp_formula,
@@ -112,7 +119,7 @@ bool get_sat(std::vector<clause_t> formula, std::vector<bool>& model) {
         tmp_formula = apply_assignment(tmp_formula,lit);
         update_model(tmp_model, lit);
         
-        auto sat = unit_propagation(tmp_formula, tmp_model);
+        sat = unit_propagation(tmp_formula, tmp_model);
 
         while (!sat) {
             if (stack.empty())
@@ -127,7 +134,8 @@ bool get_sat(std::vector<clause_t> formula, std::vector<bool>& model) {
                 tmp_model = state.model;
 
                 auto neg_lit = ~state.lit;
-                
+                ++decisions;
+
                 tmp_formula = apply_assignment(tmp_formula, neg_lit);
                 update_model(tmp_model,neg_lit);
 
@@ -142,6 +150,18 @@ bool get_sat(std::vector<clause_t> formula, std::vector<bool>& model) {
         }
     }
 }
+
+public:
+bool get_sat(const std::vector<clause_t>& formula, size_t var_count, std::vector<bool>& model) override {
+    decisions = propagations = clause_checks = 0;
+    if (model.size() < var_count + 1) model.assign(var_count + 1, false);
+    return solve(formula, model);
+}
+
+size_t get_decisions() const override { return decisions; }
+size_t get_propagations() const override { return propagations; }
+size_t get_clause_checks() const override { return clause_checks; }
+const char* name() const override { return "naive"; }
 
 };
 
