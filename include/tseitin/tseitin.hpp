@@ -39,6 +39,10 @@ public:
         return literal(id_, !negated_);
     }
 
+    bool operator==(const literal& other) const {
+        return this->id_ == other.id_ && this->negated_ == other.negated_;
+    }
+
     bool get_negation() const { return negated_; }
 };
 

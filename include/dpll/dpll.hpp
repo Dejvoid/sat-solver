@@ -161,7 +161,7 @@ bool get_sat(const std::vector<clause_t>& formula, size_t var_count, std::vector
 size_t get_decisions() const override { return decisions; }
 size_t get_propagations() const override { return propagations; }
 size_t get_clause_checks() const override { return clause_checks; }
-const char* name() const override { return "naive"; }
+const std::string_view name() const override { return "naive"; }
 
 };
 
