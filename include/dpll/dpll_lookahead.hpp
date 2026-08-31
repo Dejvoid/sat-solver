@@ -3,7 +3,6 @@
 
 #include "dpll/dpll_base.hpp"
 
-#include <cstdint>
 #include <set>
 #include <string>
 #include <string_view>

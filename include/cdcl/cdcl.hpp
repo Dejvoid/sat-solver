@@ -151,10 +151,10 @@ class cdcl : public dpll_watched {
      * 
      */
     void reduce_db() {
-        std::vector<uint8_t> locked(clauses.size(), 0);
+        std::vector<bool> locked(clauses.size(), false);
         for (const literal& l : trail) {
             size_t r = reason_of[l.get_id()];
-            if (r != NO_REASON) locked[r] = 1;
+            if (r != NO_REASON) locked[r] = true;
         }
 
         // ask the deletion policy which learned clauses to drop
