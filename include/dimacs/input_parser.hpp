@@ -25,6 +25,7 @@ public:
             }
             if (i >= line.size()) continue; // blank line
             if (line[i] == 'c') continue; // comment
+            if (line[i] == '%') break;
             if (line[i] == 'p') { // header: p cnf <vars> <clauses>
                 std::istringstream header(line);
                 std::string p_tok, fmt_tok;
