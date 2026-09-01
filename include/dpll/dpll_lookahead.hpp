@@ -9,46 +9,6 @@
 #include <utility>
 #include <vector>
 
-// DPLL with look-ahead.
-//
-// Instead of a cheap syntactic branching rule, a look-ahead solver invests real
-// work at every node to pick a good branching variable: for each free variable
-// x it tentatively assigns x, runs unit propagation, and *measures how much the
-// formula shrinks* (the "difference" heuristic). The variable whose two
-// polarities together reduce the formula the most is branched on. The
-// propagation done during look-ahead is not wasted: it also uncovers forced
-// literals (failed-literal and necessary-assignment reasoning), which prune the
-// search directly.
-//
-// This class implements the three ingredients the assignment asks for:
-//
-//   1. Two non-trivial difference heuristics that can be compared:
-//        * CRH - Clause Reduction Heuristic: weighted count of every clause that
-//          look-ahead shortens, favouring clauses reduced to small size.
-//        * WBH - Weighted Binaries Heuristic: only clauses reduced to binary
-//          count, each weighted by how constraining its two remaining literals
-//          are (occurrence based). This measures the *quality* of the new
-//          binaries rather than the raw quantity.
-//
-//   2. Additional reasoning performed for free during look-ahead:
-//        * Failed literals: if look-ahead on l derives a conflict then l is
-//          impossible, so ~l is forced.
-//        * Necessary assignments: if look-ahead on x and on ~x both imply the
-//          same literal k, then k holds regardless of x and is forced.
-//        * Local learning: whenever look-ahead on l implies a literal k, the
-//          binary clause (~l v k) is a logical consequence of the formula. It
-//          is added as an eager binary implication so later propagation - at
-//          this node and everywhere below it - can fire k directly from l
-//          without redoing the look-ahead that discovered it.
-//
-//   3. Eager data structures for cheap unit propagation:
-//        * Binary clauses are stored as direct implication lists (l => k), so
-//          propagating a binary is O(1) with no clause scan.
-//        * Longer clauses keep an eager counter of their non-false literals and
-//          of their satisfying literals, so becoming unit/binary/false is
-//          detected by counter updates rather than by rescanning the clause.
-//          These counters are exactly what makes the difference heuristics cheap
-//          to evaluate, because every reduction is observed as it happens.
 class dpll_lookahead : public dpll_base {
 public:
     // Which difference heuristic to score look-aheads with.
@@ -348,9 +308,6 @@ private:
     // outcome of lookahead
     enum class step { sat, conflict, forced, decision };
 
-    // Run look-ahead over all free variables. Either forces a literal (failed
-    // literal or necessary assignment), reports a conflict, reports SAT when no
-    // free variable remains, or selects a branching literal.
     /**
      * @brief select literal using look ahead (pick from all free variables)
      * 
