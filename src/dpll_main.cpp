@@ -37,6 +37,7 @@ std::unique_ptr<i_solver> make_solver(std::string_view variant) {
 
 std::unique_ptr<branching_heuristic> make_heuristic(std::string_view name) {
     if (name == "first") return std::make_unique<first_unassigned>();
+    if (name == "random" || name == "rand") return std::make_unique<random_heuristic>();
     if (name == "phase-saving" || name == "phase") return std::make_unique<phase_saving>();
     if (name == "jeroslow-wang" || name == "jw") return std::make_unique<jeroslow_wang>();
     if (name == "vsids") return std::make_unique<vsids>();

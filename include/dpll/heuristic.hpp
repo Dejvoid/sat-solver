@@ -4,6 +4,8 @@
 #include "tseitin/tseitin.hpp"
 
 #include <cmath>
+#include <cstdint>
+#include <random>
 #include <string_view>
 #include <vector>
 
@@ -77,6 +79,32 @@ public:
         return literal(0); // should not happen
     }
     std::string_view name() const override { return "first"; }
+};
+
+/**
+ * @brief picks a uniformly random unassigned variable and a random polarity
+ *
+ */
+class random_heuristic : public branching_heuristic {
+    std::mt19937 rng_;
+
+public:
+    explicit random_heuristic(uint32_t seed = 0x1234abcd) : rng_(seed) {}
+
+    literal decide() override {
+        // Reservoir sampling: pick a uniformly random unassigned variable in one pass.
+        size_t chosen = 0;
+        size_t seen = 0;
+        for (size_t v = 1; v <= var_count(); ++v) {
+            if (is_assigned(v)) continue;
+            ++seen;
+            if (std::uniform_int_distribution<size_t>(1, seen)(rng_) == 1) chosen = v;
+        }
+        if (chosen == 0) return literal(0); // should not happen
+        const bool negate = std::uniform_int_distribution<int>(0, 1)(rng_) == 1;
+        return literal(chosen, negate);
+    }
+    std::string_view name() const override { return "random"; }
 };
 
 // Lowest-id unassigned variable, but branch on its saved phase
