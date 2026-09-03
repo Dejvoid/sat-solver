@@ -16,6 +16,8 @@ add_compile_options(
     -Wdouble-promotion
     -Wformat=2
     -Wnull-dereference
+    -O3
+    -march=native
 )
 
 set(SRC_FILES 

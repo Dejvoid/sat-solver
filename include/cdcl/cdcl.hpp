@@ -204,7 +204,7 @@ public:
 
     bool get_sat(const std::vector<clause_t>& formula, size_t vc,
                  std::vector<bool>& model) override {
-        set_heuristic(std::make_unique<cdcl_vsids>());
+        //set_heuristic(std::make_unique<cdcl_vsids>());
         reset(formula, vc); 
         cdcl_reset();
         deletion->start(clauses.size());
