@@ -8,19 +8,6 @@
 #include <memory>
 #include <vector>
 
-// Shared machinery for the trail-based DPLL variants (adjacency lists and
-// watched literals). Both variants share the same decision / backtracking loop
-// and assignment representation; they differ only in how boolean constraint
-// propagation is implemented, which is provided through the virtual `init` and
-// `propagate` hooks.
-//
-// Assignments are stored on a trail (chronological order). Backtracking is
-// chronological: each decision is tried in both polarities before the level is
-// abandoned. Clauses keep the codebase's `clause_t` (`std::vector<literal>`)
-// representation; the current assignment is recorded per variable in `value`.
-
-// Truth value of a variable, and equally the status of a literal, under the
-// current partial assignment. Backed by int8_t so it is cheap to store in bulk.
 enum class assignment : int8_t {
     False = -1,
     Unassigned = 0,
