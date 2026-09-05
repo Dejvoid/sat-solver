@@ -9,6 +9,7 @@
 #include "cdcl/cdcl.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -48,8 +49,10 @@ int main(int argc, char** argv) {
     std::string path;
     std::string variant = "watched";
     std::string heuristic_name;
+    std::string assume_str;
 
-    // Parse arguments: [--variant NAME | -v NAME] [--heuristic NAME | -H NAME] [file]
+    // Parse arguments: [--variant NAME | -v NAME] [--heuristic NAME | -H NAME]
+    //                  [--assume "L1 L2 ..." | -a "L1 L2 ..."] [file]
     for (int a = 1; a < argc; ++a) {
         std::string_view arg = argv[a];
         if ((arg == "--variant" || arg == "-v") && a + 1 < argc) {
@@ -60,6 +63,10 @@ int main(int argc, char** argv) {
             heuristic_name = argv[++a];
         } else if (arg.rfind("--heuristic=", 0) == 0) {
             heuristic_name = std::string(arg.substr(std::string_view("--heuristic=").size()));
+        } else if ((arg == "--assume" || arg == "-a") && a + 1 < argc) {
+            assume_str = argv[++a];
+        } else if (arg.rfind("--assume=", 0) == 0) {
+            assume_str = std::string(arg.substr(std::string_view("--assume=").size()));
         } else if (path.empty()) {
             path = std::string(arg);
         }
@@ -126,8 +133,28 @@ int main(int argc, char** argv) {
         }
     }
 
+    // Parse assumption literals (DIMACS-style ints, e.g. "1 -3 5"). Commas allowed.
+    std::vector<literal> assumptions;
+    if (!assume_str.empty()) {
+        for (char& ch : assume_str) {
+            if (ch == ',') ch = ' ';
+        }
+        std::istringstream as(assume_str);
+        long long lit;
+        while (as >> lit) {
+            if (lit == 0) continue;
+            const size_t id = static_cast<size_t>(std::llabs(lit));
+            if (id > var_count) {
+                std::cerr << "Assumption literal " << lit
+                          << " refers to an unknown variable" << std::endl;
+                return 1;
+            }
+            assumptions.emplace_back(id, lit < 0);
+        }
+    }
+
     const std::clock_t start = std::clock();
-    const bool sat = alg->get_sat(clauses, var_count, model);
+    const bool sat = alg->get_sat(clauses, var_count, model, assumptions);
     const std::clock_t end = std::clock();
     const double cpu_ms =
         1000.0 * static_cast<double>(end - start) / static_cast<double>(CLOCKS_PER_SEC);
@@ -151,6 +178,9 @@ int main(int argc, char** argv) {
     }
 
     std::cout << "c Variant: " << alg->name() << std::endl;
+    if (!assumptions.empty()) {
+        std::cout << "c Assumptions: " << assumptions.size() << std::endl;
+    }
     std::cout << "c Total CPU time: " << cpu_ms << " ms" << std::endl;
     std::cout << "c Decisions: " << alg->get_decisions() << std::endl;
     std::cout << "c Unit propagation steps: " << alg->get_propagations() << std::endl;

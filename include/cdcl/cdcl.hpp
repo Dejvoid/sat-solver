@@ -196,6 +196,9 @@ class cdcl : public dpll_watched {
         conflicts = restarts = deleted = 0;
     }
 
+    // assumption literals: forced true for the current run and used as the first decisions (before the heuristic)
+    std::vector<literal> assumptions;
+
 public:
     void set_minimizer(std::unique_ptr<clause_minimizer> m) { minimizer = std::move(m); }
     void set_learning(std::unique_ptr<clause_learning> l) { learning = std::move(l); }
@@ -204,6 +207,13 @@ public:
 
     bool get_sat(const std::vector<clause_t>& formula, size_t vc,
                  std::vector<bool>& model) override {
+        return get_sat(formula, vc, model, {});
+    }
+
+    bool get_sat(const std::vector<clause_t>& formula, size_t vc,
+                 std::vector<bool>& model,
+                 const std::vector<literal>& assumps) override {
+        assumptions = assumps;
         //set_heuristic(std::make_unique<cdcl_vsids>());
         reset(formula, vc); 
         cdcl_reset();
@@ -238,13 +248,26 @@ public:
                     continue;
                 }
 
-                if (heuristic->all_assigned()) {  // full model -> SAT
-                    assign_model(model);
-                    return true;
+                // assumptions first
+                literal next(0);
+                bool forced = false;
+                while (decision_level() < static_cast<int>(assumptions.size())) {
+                    const literal p = assumptions[static_cast<size_t>(decision_level())];
+                    const assignment v = lit_val(p);
+                    if (v == assignment::True) { trail_lim.push_back(trail.size()); continue; }
+                    if (v == assignment::False) return false;  // UNSAT under the assumptions
+                    next = p; forced = true; break;
+                }
+                if (!forced) {
+                    if (heuristic->all_assigned()) {  // full model -> SAT
+                        assign_model(model);
+                        return true;
+                    }
+                    next = heuristic->decide();
                 }
                 ++decisions;
                 trail_lim.push_back(trail.size());
-                push_assignment(heuristic->decide());
+                push_assignment(next);  // also notifies the heuristic
             }
         }
     }
